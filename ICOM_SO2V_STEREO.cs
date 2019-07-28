@@ -22,12 +22,8 @@ namespace DXLog.net
         readonly byte[] IcomDualWatchOff = { 0x07, 0xC0 };
         readonly string statusMessage = "Focus on {0} VFO. {1}.";
 
-        // Executes at DXLog.net start 
-        public void Initialize(FrmMain main)
+        void findMicrohamPort(COMMain commMain)
         {
-            mainForm = main;
-            COMMain commMain = main.COMMainProvider;
-
             // Find Microham port
             foreach (COMPort _comport in commMain._com)
             {
@@ -38,13 +34,25 @@ namespace DXLog.net
                         case "MK2R/MK2R+/u2R":
                             if (_comport._mk2r != null)
                                 microHamPort = _comport;
+                            mainForm.SetMainStatusText("Found Microham device");
                             break;
                         default:
+                            mainForm.SetMainStatusText("Did not find Microham device");
                             microHamPort = null;
                             break;
                     }
                 }
             }
+        }
+
+        // Executes at DXLog.net start 
+        public void Initialize(FrmMain main)
+        {
+            mainForm = main;
+
+            // Find Microham port
+            if (microHamPort == null)
+                findMicrohamPort(main.COMMainProvider);
         }
 
 
@@ -61,15 +69,19 @@ namespace DXLog.net
             bool modeIsSo2V = (cdata.OPTechnique == ContestData.Technique.SO2V);
             bool radio1Present = (radio1 != null);
 
-            if (focusedRadio == 1)
+            if (true)
             {
+                // Find Microham port
+                if (microHamPort == null)
+                    findMicrohamPort(main.COMMainProvider);
+
                 main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", stereoAudio ? "Main Receiver" : "Dual Watch"));
                 if (radio1Present && modeIsSo2V)
                     if (radio1.IsICOM())
                     {
                         radio1.SendCustomCommand(stereoAudio ? IcomDualWatchOff : IcomDualWatchOn);
                         if (microHamPort != null)
-                            microHamPort._mk2r.SendCustomCommand("FRS;");
+                            microHamPort._mk2r.SendCustomCommand("FRS");
                     }
                 main.ScriptContinue = true;
             }
