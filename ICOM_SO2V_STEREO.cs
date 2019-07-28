@@ -15,75 +15,57 @@ namespace DXLog.net
     public class IcomSO2VDW : ScriptClass
     {
         readonly bool Debug = false;
-        FrmMain mainForm;
         COMPort microHamPort;
 
-        readonly byte[] IcomDualWatchOn = { 0x07, 0xC1 };
-        readonly byte[] IcomDualWatchOff = { 0x07, 0xC0 };
         readonly string statusMessage = "Focus on {0} VFO. {1}.";
 
-        void findMicrohamPort(COMMain commMain)
-        {
-            // Find Microham port
-            foreach (COMPort _comport in commMain._com)
-            {
-                if (_comport != null)
-                {
-                    switch (_comport._portDeviceName)
-                    {
-                        case "MK2R/MK2R+/u2R":
-                            if (_comport._mk2r != null)
-                                microHamPort = _comport;
-                            mainForm.SetMainStatusText("Found Microham device");
-                            break;
-                        default:
-                            mainForm.SetMainStatusText("Did not find Microham device");
-                            microHamPort = null;
-                            break;
-                    }
-                }
-            }
-        }
 
         // Executes at DXLog.net start 
         public void Initialize(FrmMain main)
         {
-            mainForm = main;
-
             // Find Microham port
             if (microHamPort == null)
-                findMicrohamPort(main.COMMainProvider);
+                foreach (COMPort _comport in main.COMMainProvider._com)
+                {
+                    if (_comport != null)
+                    {
+                        switch (_comport._portDeviceName)
+                        {
+                            case "MK2R/MK2R+/u2R":
+                                if (_comport._mk2r != null)
+                                    microHamPort = _comport;
+                                main.SetMainStatusText("Found Microham device");
+                                break;
+                            default:
+                                main.SetMainStatusText("Did not find Microham device");
+                                microHamPort = null;
+                                break;
+                        }
+                    }
+                }
         }
-
 
         public void Deinitialize() { } 
 
-        // Toggle permanent dual watch, execution of Main is mapped to same key as built-in toggle Ctrl-Alt-S = AltGr-S.
+        // Toggle permanent stereo, execution of Main is mapped to Ctrl-Alt-D
         public void Main(FrmMain main, ContestData cdata, COMMain comMain)
         {
-            CATCommon radio1 = comMain.RadioObject(1);
-
             int focusedRadio = cdata.FocusedRadio;
             // ListenStatusMode: 0=Radio 1, 1=Radio 2 toggle, 2=Radio 2, 3=Both
-            bool stereoAudio = (mainForm.ListenStatusMode != 0);
+            bool stereoAudio = (main.ListenStatusMode != 0);
             bool modeIsSo2V = (cdata.OPTechnique == ContestData.Technique.SO2V);
-            bool radio1Present = (radio1 != null);
 
             if (true)
             {
-                // Find Microham port
-                if (microHamPort == null)
-                    findMicrohamPort(main.COMMainProvider);
+                main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", stereoAudio ? "Single receiver" : "Stereo"));
 
-                main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", stereoAudio ? "Main Receiver" : "Dual Watch"));
-                if (radio1Present && modeIsSo2V)
-                    if (radio1.IsICOM())
+                if (modeIsSo2V)
+                    if (microHamPort != null)
                     {
-                        radio1.SendCustomCommand(stereoAudio ? IcomDualWatchOff : IcomDualWatchOn);
-                        if (microHamPort != null)
-                            microHamPort._mk2r.SendCustomCommand("FRS");
+                        microHamPort._mk2r.SendCustomCommand("FRS");
                     }
-                main.ScriptContinue = true;
+
+                //main.ScriptContinue = true;
             }
 
         }

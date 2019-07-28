@@ -106,8 +106,8 @@ namespace DXLog.net
                 tempStereoAudio = !tempStereoAudio;
                 main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", tempStereoAudio ? "Dual Watch" : "Main Receiver"));
 
-                if (microHamPort == null)
-                    findMicrohamPort(main.COMMainProvider);
+                //if (microHamPort == null)
+                //    findMicrohamPort(main.COMMainProvider);
 
                 if (microHamPort != null)
                     if (microHamPort._mk2r != null)
