@@ -26,39 +26,15 @@ namespace DXLog.net
 
 
         readonly byte[] IcomDualWatchOn = { 0x07, 0xC1 };
-        readonly byte[] IcomDualWatchOff = { 0x07, 0xC0 };
         readonly byte[] IcomSelectMain = { 0x07, 0xD0 };
         readonly byte[] IcomSelectSub = { 0x07, 0xD1 };
         readonly byte[] IcomSplitOff = { 0x0F, 0x00 };
         readonly string statusMessage = "Focus on {0} VFO. {1}.";
 
-        delegate void HandleListenStatusChangeCB(int newMode);
+        //delegate void HandleListenStatusChangeCB(int newMode);
 
         bool tempStereoAudio;
         int lastFocus;
-
-        void findMicrohamPort(COMMain commMain)
-        {
-            // Find Microham port
-            foreach (COMPort _comport in commMain._com)
-            {
-                if (_comport != null)
-                {
-                    switch (_comport._portDeviceName)
-                    {
-                        case "MK2R/MK2R+/u2R":
-                            if (_comport._mk2r != null)
-                                microHamPort = _comport;
-                            mainForm.SetMainStatusText("Found Microham device");
-                            break;
-                        default:
-                            mainForm.SetMainStatusText("Did not find Microham device");
-                            microHamPort = null;
-                            break;
-                    }
-                }
-            }
-        }
 
         // Executes at DXLog.net start 
 
@@ -69,7 +45,25 @@ namespace DXLog.net
             mainForm = main;
 
             if (microHamPort == null)
-                findMicrohamPort(main.COMMainProvider);
+                // Find Microham port
+                foreach (COMPort _comport in main.COMMainProvider._com)
+                {
+                    if (_comport != null)
+                    {
+                        switch (_comport._portDeviceName)
+                        {
+                            case "MK2R/MK2R+/u2R":
+                                if (_comport._mk2r != null)
+                                    microHamPort = _comport;
+                                mainForm.SetMainStatusText("Found Microham device");
+                                break;
+                            default:
+                                mainForm.SetMainStatusText("Did not find Microham device");
+                                microHamPort = null;
+                                break;
+                        }
+                    }
+                }
 
             // Initialize temporary stereo mode to DXLog's stereo mode to support temporary toggle
             // At start up, radio 1 is always focused and stereo audio is disabled
@@ -88,9 +82,7 @@ namespace DXLog.net
                     radio1.SendCustomCommand(IcomSplitOff);
                 }
 
-            if (microHamPort != null)
-                if (microHamPort._mk2r != null)
-                    microHamPort._mk2r.SendCustomCommand("FR1");
+            main.SetListenStatusMode(0, false, false);
         }
 
         public void Deinitialize() { }
@@ -104,10 +96,7 @@ namespace DXLog.net
             if (cdata.OPTechnique == ContestData.Technique.SO2V)
             {
                 tempStereoAudio = !tempStereoAudio;
-                main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", tempStereoAudio ? "Dual Watch" : "Main Receiver"));
-
-                //if (microHamPort == null)
-                //    findMicrohamPort(main.COMMainProvider);
+                main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", tempStereoAudio ? "Stereo" : "Single receiver"));
 
                 if (microHamPort != null)
                     if (microHamPort._mk2r != null)
@@ -131,7 +120,7 @@ namespace DXLog.net
             int focusedRadio = cdata.FocusedRadio;
             // ListenStatusMode: 0=Radio 1, 1=Radio 2 toggle, 2=Radio 2, 3=Both
             int listenMode = mainForm.ListenStatusMode;
-            bool stereoAudio = (listenMode != 0);
+            bool stereoAudio = (listenMode == 3);
             bool modeIsSo2V = (cdata.OPTechnique == ContestData.Technique.SO2V);
             string audioStatus;
             bool noRadio = radio1 == null;
@@ -141,26 +130,20 @@ namespace DXLog.net
                 tempStereoAudio = stereoAudio; // Set temporary stereo mode to DXLog's stereo mode to support temporary toggle
                 lastFocus = focusedRadio;
 
-                if (microHamPort != null)
-                    if (microHamPort._mk2r != null)
-                    {
-                        if (focusedRadio == 1)
-                            microHamPort._mk2r.SendCustomCommand("FR1");
-                        else
-                            microHamPort._mk2r.SendCustomCommand("FR2");
-                    }
+                if (!stereoAudio)
+                    mainForm.SetListenStatusMode(focusedRadio == 1 ? 0 : 1, false, false);
+                else
+                    mainForm.SetListenStatusMode(3, true, false);
 
                 if (!noRadio)
                 {
                     radio1.SendCustomCommand(focusedRadio == 1 ? IcomSelectMain : IcomSelectSub);
 
-                    audioStatus = stereoAudio || (focusedRadio == 2) ? "Dual Watch" : "Main Receiver";
-
-                    //if (Debug) mainForm.SetMainStatusText(string.Format("IcomSO2V: Listenmode {0}. Focus is Radio #{1}, {2}.",
-                    //    listenMode, focusedRadio, audioStatus));
-                    //else
-                    //    mainForm.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", audioStatus));
-
+                    audioStatus = stereoAudio ? "Stereo" : "Single receiver";
+                    if (Debug) mainForm.SetMainStatusText(string.Format("IcomSO2V: Listenmode {0}. Focus is Radio #{1}, {2}.",
+                        listenMode, focusedRadio, audioStatus));
+                    else
+                        mainForm.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", audioStatus));
                 }
             }
         }
