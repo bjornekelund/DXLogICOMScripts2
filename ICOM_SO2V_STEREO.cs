@@ -63,7 +63,7 @@ namespace DXLog.net
 
             if (focusedRadio == 1)
             {
-                main.SetMainStatusText(String.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", stereoAudio ? "Main Receiver" : "Dual Watch"));
+                main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", stereoAudio ? "Main Receiver" : "Dual Watch"));
                 if (radio1Present && modeIsSo2V)
                     if (radio1.IsICOM())
                     {

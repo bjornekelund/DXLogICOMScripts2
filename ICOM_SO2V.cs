@@ -11,9 +11,8 @@
 // does not trigger an event, any change in audio mode will not come 
 // into force until the next focus switch. 
 // Only active for ICOM radio but does not verify radio is SO2V capable
-// By Björn Ekelund SM7IUN sm7iun@ssa.se 2019-04-16
+// By Björn Ekelund SM7IUN sm7iun@ssa.se 2019-07-28
 
-using System;
 using IOComm;
 
 namespace DXLog.net
@@ -76,10 +75,14 @@ namespace DXLog.net
             if (radio1 != null)
                 if (radio1.IsICOM()) {
                     // Initialize radio to DW off, Split off and Main VFO focused
-                    radio1.SendCustomCommand(IcomDualWatchOff); 
+                    radio1.SendCustomCommand(IcomDualWatchOn); 
                     radio1.SendCustomCommand(IcomSelectMain);
                     radio1.SendCustomCommand(IcomSplitOff);
                 }
+
+            if (microHamPort != null)
+                if (microHamPort._mk2r != null)
+                    microHamPort._mk2r.SendCustomCommand("FR1;");
         }
 
         public void Deinitialize() { }
@@ -89,15 +92,23 @@ namespace DXLog.net
         public void Main(FrmMain main, ContestData cdata, COMMain comMain)
         {
             int focusedRadio = cdata.FocusedRadio;
-            CATCommon radio1 = comMain.RadioObject(focusedRadio);
-            bool radio1Present = (radio1 != null);
 
-            if ((focusedRadio == 1) && cdata.OPTechnique == ContestData.Technique.SO2V)
-            { // If VFO A focused, SO2V and radio present
+            if (cdata.OPTechnique == ContestData.Technique.SO2V)
+            { 
                 tempStereoAudio = !tempStereoAudio;
-                mainForm.SetMainStatusText(String.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", tempStereoAudio ? "Dual Watch" : "Main Receiver"));
-                if (radio1Present)
-                    radio1.SendCustomCommand(tempStereoAudio ? IcomDualWatchOn : IcomDualWatchOff);
+                main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", tempStereoAudio ? "Dual Watch" : "Main Receiver"));
+
+                if (microHamPort != null)
+                    if (microHamPort._mk2r != null)
+                        if (tempStereoAudio)
+                            microHamPort._mk2r.SendCustomCommand("FRS;");
+                        else
+                        {
+                            if (focusedRadio == 1)
+                                microHamPort._mk2r.SendCustomCommand("FR1;");
+                            else
+                                microHamPort._mk2r.SendCustomCommand("FR2;");
+                        }
             }
         }
 
@@ -119,18 +130,24 @@ namespace DXLog.net
                 tempStereoAudio = stereoAudio; // Set temporary stereo mode to DXLog's stereo mode to support temporary toggle
                 lastFocus = focusedRadio;
 
-                if (!noRadio)
-                {
+                if (microHamPort != null)
+                    if (microHamPort._mk2r != null)
+                    {
+                        if (focusedRadio == 1)
+                            microHamPort._mk2r.SendCustomCommand("FR1;");
+                        else
+                            microHamPort._mk2r.SendCustomCommand("FR2");
+                    }
+
+                if (!noRadio)                {
                     radio1.SendCustomCommand(focusedRadio == 1 ? IcomSelectMain : IcomSelectSub);
-                    radio1.SendCustomCommand(stereoAudio || (focusedRadio == 2) ? IcomDualWatchOn : IcomDualWatchOff);
-                }
 
                 audioStatus = stereoAudio || (focusedRadio == 2) ? "Dual Watch" : "Main Receiver";
 
-                if (Debug) mainForm.SetMainStatusText(String.Format("IcomSO2V: Listenmode {0}. Focus is Radio #{1}, {2}.",
+                if (Debug) mainForm.SetMainStatusText(string.Format("IcomSO2V: Listenmode {0}. Focus is Radio #{1}, {2}.",
                     listenMode, focusedRadio, audioStatus));
                 else
-                    mainForm.SetMainStatusText(String.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", audioStatus));
+                    mainForm.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", audioStatus));
 
             }
         }
