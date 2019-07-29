@@ -2,15 +2,11 @@
 //INCLUDE_ASSEMBLY System.Windows.Forms.dll
 
 // ICOM SO2V VFO focus and audio management, event driven but also mapped 
-// to key for stereo/main toggling when Radio 1 (main receiver in SO2V) is 
-// selected. Key used is typically § (on EU keyboard) or `(on US keyboard) 
+// to key for temporary stereo on/off toggling.
+// Key used is typically § (on EU keyboard) or `(on US keyboard) 
 // to maintain muscle-memory compatibility with N1MM.
-// Tested on IC-7610 but should work on all modern dual receiver ICOM radios.
-// Use Ctrl-Alt-S/AltGr-S to toggle between permanent dual receive and 
-// dual receive only when sub receiver is focused. Since pressing Ctrl-Alt-S 
-// does not trigger an event, any change in audio mode will not come 
-// into force until the next focus switch. 
-// Only active for ICOM radio but does not verify radio is SO2V capable
+// Tested on IC-7610 but should work on all modern dual receiver radios.
+// Use Ctrl-Alt-S/AltGr-S to toggle permanent stereo on/off. 
 // By Björn Ekelund SM7IUN sm7iun@ssa.se 2019-07-28
 
 using IOComm;
@@ -50,7 +46,7 @@ namespace DXLog.net
                     if (_comport._mk2r != null)
                     {
                         microHamPort = _comport;
-                        mainForm.SetMainStatusText("Found Microham device");
+                        //mainForm.SetMainStatusText("Found Microham device");
                     }
                 }
             }
@@ -72,7 +68,7 @@ namespace DXLog.net
                     radio1.SendCustomCommand(IcomSplitOff);
                 }
 
-            main.SetListenStatusMode(0, false, false);
+            main.SetListenStatusMode(3, false, false);
         }
 
         public void Deinitialize() { }
@@ -81,7 +77,7 @@ namespace DXLog.net
 
         public void Main(FrmMain main, ContestData cdata, COMMain comMain)
         {
-            int focusedRadio = cdata.ActiveRadio;
+            int focusedRadio = cdata.FocusedRadio;
 
             if (cdata.OPTechnique == ContestData.Technique.SO2V)
             {
