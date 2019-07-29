@@ -3,7 +3,7 @@
 
 // ICOM SO2V helper script to toggle permanent stereo on and off. 
 // Mapped to Ctrl-Alt-S (AltGr-S). 
-// By Björn Ekelund SM7IUN sm7iun@ssa.se 2019-04-16
+// By Björn Ekelund SM7IUN sm7iun@ssa.se 2019-07-29
 
 using IOComm;
 
