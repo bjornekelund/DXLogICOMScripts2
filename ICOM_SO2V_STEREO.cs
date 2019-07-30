@@ -33,9 +33,12 @@ namespace DXLog.net
                     main.SetListenStatusMode(0, true, false);
 
                 main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", stereoAudio ? "Single receiver" : "Stereo"));
-            }
 
-            main.ScriptContinue = false; // Do not continue with DXLog's own key definition
+                main.ScriptContinue = false; // Do not continue with DXLog's own key definition
+            }
+            else
+                main.ScriptContinue = true; // Use DXLog's own key definition if not SO2V
+
         }
     }
 }
