@@ -1,7 +1,7 @@
 //INCLUDE_ASSEMBLY System.dll
 //INCLUDE_ASSEMBLY System.Windows.Forms.dll
 
-// ICOM SO2V VFO focus and audio management for Microham MK2R/u2R, 
+// ICOM SO2V VFO focus and audio management for Microham MK2R, 
 // event driven but also mapped to key for temporary stereo on/off toggling.
 // Key used is typically § (on EU keyboard) or `(on US keyboard) 
 // to maintain muscle-memory compatibility with N1MM.
@@ -44,7 +44,7 @@ namespace DXLog.net
 
             // Initialize temporary stereo mode to DXLog's stereo mode to support temporary toggle
             // At start up, radio 1 is always focused and stereo audio is forced
-            main.SetListenStatusMode(3, true, false);
+            main.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);
             tempStereoToggle = false;
             lastFocusedRadio = 1;
 
@@ -68,7 +68,7 @@ namespace DXLog.net
         public void Main(FrmMain main, ContestData cdata, COMMain comMain)
         {
             int focusedRadio = cdata.FocusedRadio;
-            bool stereoAudio = main.ListenStatusMode == 3;
+            bool stereoAudio = main.ListenStatusMode == COMMain.ListenMode.R1R2;
             bool tempStereoAudio; 
 
             if (cdata.OPTechnique == ContestData.Technique.SO2V)
@@ -84,6 +84,11 @@ namespace DXLog.net
                     else
                         microHamPort._mk2r.SendCustomCommand(string.Format("FR{0}", focusedRadio == 1 ? 1 : 2));
 
+                    //if (tempStereoAudio)
+                    //    microHamPort._mk2r.SendCustomCommand("FRD100000010000");
+                    //else
+                    //    microHamPort._mk2r.SendCustomCommand(focusedRadio == 1 ? "FRD100000100000" : "FRD010000010000");
+
                     tempStereoToggle = !tempStereoToggle;
                 }
             }
@@ -96,7 +101,7 @@ namespace DXLog.net
             CATCommon radio1 = mainForm.COMMainProvider.RadioObject(1);
             int focusedRadio = mainForm.ContestDataProvider.FocusedRadio;
             // ListenStatusMode: 0=Radio 1, 1=Radio 2 toggle, 2=Radio 2, 3=Both
-            bool stereoAudio = mainForm.ListenStatusMode == 3;
+            bool stereoAudio = mainForm.ListenStatusMode == COMMain.ListenMode.R1R2;
             bool modeIsSo2V = mainForm.ContestDataProvider.OPTechnique == ContestData.Technique.SO2V;
 
             tempStereoToggle = false;
@@ -107,9 +112,9 @@ namespace DXLog.net
 
                 if (microHamPort != null)
                     if (stereoAudio)
-                        mainForm.SetListenStatusMode(3, true, false);
+                        mainForm.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);
                     else
-                        mainForm.SetListenStatusMode(0, false, false);
+                        mainForm.SetListenStatusMode(focusedRadio == 1 ? COMMain.ListenMode.R1R1 : COMMain.ListenMode.R2R2, true, false);
 
                 if (radio1 != null)
                     if (radio1.IsICOM())

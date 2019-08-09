@@ -21,16 +21,15 @@ namespace DXLog.net
         public void Main(FrmMain main, ContestData cdata, COMMain comMain)
         {
             int focusedRadio = cdata.FocusedRadio;
-            // ListenStatusMode: 0=Radio 1, 1=Radio 2 toggle, 2=Radio 2, 3=Both
-            bool stereoAudio = main.ListenStatusMode == 3;
+            bool stereoAudio = main.ListenStatusMode == COMMain.ListenMode.R1R2;
             bool modeIsSo2V = cdata.OPTechnique == ContestData.Technique.SO2V;
 
             if (modeIsSo2V)
             {
                 if (!stereoAudio)
-                    main.SetListenStatusMode(3, true, false);
+                    main.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);
                 else
-                    main.SetListenStatusMode(0, true, false);
+                    main.SetListenStatusMode(focusedRadio == 1 ? COMMain.ListenMode.R1R1 : COMMain.ListenMode.R2R2, true, false);
 
                 main.SetMainStatusText(string.Format(statusMessage, focusedRadio == 1 ? "Main" : "Sub", stereoAudio ? "Single receiver" : "Stereo"));
 
