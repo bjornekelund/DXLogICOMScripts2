@@ -22,9 +22,8 @@ namespace DXLog.net
         {
             int focusedRadio = cdata.FocusedRadio;
             bool stereoAudio = main.ListenStatusMode == COMMain.ListenMode.R1R2;
-            bool modeIsSo2V = cdata.OPTechnique == ContestData.Technique.SO2V;
 
-            if (modeIsSo2V)
+            if (cdata.OPTechnique == ContestData.Technique.SO2V)
             {
                 if (!stereoAudio)
                     main.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);

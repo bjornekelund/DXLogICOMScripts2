@@ -7,7 +7,7 @@
 // to maintain muscle-memory compatibility with N1MM.
 // Tested on IC-7610 but should work on all modern dual receiver radios.
 // Use Ctrl-Alt-S/AltGr-S to toggle permanent stereo on/off. 
-// By Björn Ekelund SM7IUN sm7iun@ssa.se 2019-07-30
+// By Björn Ekelund SM7IUN sm7iun@ssa.se 2019-09-19
 
 using IOComm;
 
@@ -28,43 +28,44 @@ namespace DXLog.net
         bool tempStereoToggle;
 
         // Executes at DXLog.net start 
-
         public void Initialize(FrmMain main)
         {
             mainForm = main;
             CATCommon radio1 = main.COMMainProvider.RadioObject(1);
 
-            // Find Microham port
-            foreach (COMPort _comport in main.COMMainProvider._com)
-                if (_comport._mk2r != null)
-                    microHamPort = _comport;
+            if (main.ContestDataProvider.OPTechnique == ContestData.Technique.SO2V)
+            {
+                // Find Microham port
+                foreach (COMPort _comport in main.COMMainProvider._com)
+                    if (_comport._mk2r != null)
+                        microHamPort = _comport;
 
-            if (microHamPort == null)
-                main.COMMainProvider.SignalMessage("ICOM_SO2V: ERROR no Microham device");
+                if (microHamPort == null)
+                    main.COMMainProvider.SignalMessage("ICOM_SO2V: ERROR no Microham device");
 
-            // Initialize temporary stereo mode to DXLog's stereo mode to support temporary toggle
-            // At start up, radio 1 is always focused and stereo audio is forced
-            main.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);
-            tempStereoToggle = false;
-            lastFocusedRadio = 1;
+                // Initialize temporary stereo mode to DXLog's stereo mode to support temporary toggle
+                // At start up, radio 1 is always focused and stereo audio is forced
+                main.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);
+                tempStereoToggle = false;
+                lastFocusedRadio = 1;
 
-            main.ContestDataProvider.FocusedRadioChanged += new ContestData.FocusedRadioChange(HandleFocusChange);
+                main.ContestDataProvider.FocusedRadioChanged += new ContestData.FocusedRadioChange(HandleFocusChange);
 
-            // Only initialize radio if present and ICOM
-            if (radio1 != null)
-                if (radio1.IsICOM())
-                {
-                    // Initialize radio to DW off, Split off and Main VFO focused
-                    radio1.SendCustomCommand(IcomDualWatchOn);
-                    radio1.SendCustomCommand(IcomSelectMain);
-                    radio1.SendCustomCommand(IcomSplitOff);
-                }
+                // Only initialize radio if present and ICOM
+                if (radio1 != null)
+                    if (radio1.IsICOM())
+                    {
+                        // Initialize radio to DW off, Split off and Main VFO focused
+                        radio1.SendCustomCommand(IcomDualWatchOn);
+                        radio1.SendCustomCommand(IcomSelectMain);
+                        radio1.SendCustomCommand(IcomSplitOff);
+                    }
+            }
         }
 
         public void Deinitialize() { }
 
         // Toggle dual watch in SO2V. Typically mapped to a key in upper left corner of keyboard.
-
         public void Main(FrmMain main, ContestData cdata, COMMain comMain)
         {
             int focusedRadio = cdata.FocusedRadio;
@@ -84,29 +85,21 @@ namespace DXLog.net
                     else
                         microHamPort._mk2r.SendCustomCommand(string.Format("FR{0}", focusedRadio == 1 ? 1 : 2));
 
-                    //if (tempStereoAudio)
-                    //    microHamPort._mk2r.SendCustomCommand("FRD100000010000");
-                    //else
-                    //    microHamPort._mk2r.SendCustomCommand(focusedRadio == 1 ? "FRD100000100000" : "FRD010000010000");
-
                     tempStereoToggle = !tempStereoToggle;
                 }
             }
         }
 
-        // Event handler invoked when switching between radios (SO2R) or VFO (SO2V) in DXLog.net
-
+        // Event handler invoked when switching between VFO in SO2V in DXLog.net
         private void HandleFocusChange()
         {
             CATCommon radio1 = mainForm.COMMainProvider.RadioObject(1);
             int focusedRadio = mainForm.ContestDataProvider.FocusedRadio;
-            // ListenStatusMode: 0=Radio 1, 1=Radio 2 toggle, 2=Radio 2, 3=Both
             bool stereoAudio = mainForm.ListenStatusMode == COMMain.ListenMode.R1R2;
-            bool modeIsSo2V = mainForm.ContestDataProvider.OPTechnique == ContestData.Technique.SO2V;
 
             tempStereoToggle = false;
 
-            if (modeIsSo2V && focusedRadio != lastFocusedRadio) // Only active in SO2V. Ignore redundant invokations.
+            if (focusedRadio != lastFocusedRadio) // Only active in SO2V. Ignore redundant invokations.
             {
                 lastFocusedRadio = focusedRadio;
 
