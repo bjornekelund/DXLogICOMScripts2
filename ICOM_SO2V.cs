@@ -16,7 +16,7 @@ namespace DXLog.net
     public class IcomSO2V : ScriptClass
     {
         FrmMain mainForm;
-        COMPort microHamPort;
+        COMPort microHamPort = null;
 
         readonly byte[] IcomDualWatchOn = { 0x07, 0xC1 };
         readonly byte[] IcomSelectMain = { 0x07, 0xD0 };
@@ -40,26 +40,30 @@ namespace DXLog.net
                     if (_comport._mk2r != null)
                         microHamPort = _comport;
 
-                if (microHamPort == null)
-                    main.COMMainProvider.SignalMessage("ICOM_SO2V: ERROR no Microham device");
+                if (microHamPort != null)
+                {
+                    // Initialize temporary stereo mode to DXLog's stereo mode to support temporary toggle
+                    // At start up, radio 1 is always focused and stereo audio is forced
+                    main.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);
+                    tempStereoToggle = false;
+                    lastFocusedRadio = 1;
 
-                // Initialize temporary stereo mode to DXLog's stereo mode to support temporary toggle
-                // At start up, radio 1 is always focused and stereo audio is forced
-                main.SetListenStatusMode(COMMain.ListenMode.R1R2, true, false);
-                tempStereoToggle = false;
-                lastFocusedRadio = 1;
+                    main.ContestDataProvider.FocusedRadioChanged += new ContestData.FocusedRadioChange(HandleFocusChange);
 
-                main.ContestDataProvider.FocusedRadioChanged += new ContestData.FocusedRadioChange(HandleFocusChange);
-
-                // Only initialize radio if present and ICOM
-                if (radio1 != null)
-                    if (radio1.IsICOM())
+                    // Only initialize radio if present and ICOM
+                    if (radio1 != null)
                     {
-                        // Initialize radio to DW off, Split off and Main VFO focused
-                        radio1.SendCustomCommand(IcomDualWatchOn);
-                        radio1.SendCustomCommand(IcomSelectMain);
-                        radio1.SendCustomCommand(IcomSplitOff);
+                        if (radio1.IsICOM())
+                        {
+                            // Initialize radio to DW off, Split off and Main VFO focused
+                            radio1.SendCustomCommand(IcomDualWatchOn);
+                            radio1.SendCustomCommand(IcomSelectMain);
+                            radio1.SendCustomCommand(IcomSplitOff);
+                        }
                     }
+                }
+                else
+                    main.COMMainProvider.SignalMessage("ICOM_SO2V: ERROR no Microham device");
             }
         }
 
@@ -83,7 +87,7 @@ namespace DXLog.net
                     if (tempStereoAudio)
                         microHamPort._mk2r.SendCustomCommand("FRS");
                     else
-                        microHamPort._mk2r.SendCustomCommand(string.Format("FR{0}", focusedRadio == 1 ? 1 : 2));
+                        microHamPort._mk2r.SendCustomCommand(string.Format("FR{0}", focusedRadio == 1 ? 1 : 2)); // Remove conditional assignment?
 
                     tempStereoToggle = !tempStereoToggle;
                 }
