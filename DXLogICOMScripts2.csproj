@@ -72,6 +72,7 @@
   <ItemGroup>
     <Compile Include="ICOM_Filter.cs" />
     <Compile Include="ICOM_SO2V.cs" />
+    <Compile Include="ICOM_CQO.cs" />
     <Compile Include="ICOM_SO2V_STEREO.cs" />
     <Compile Include="ICOM_Speedsynch.cs" />
   </ItemGroup>
